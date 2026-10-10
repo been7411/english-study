@@ -44,7 +44,7 @@
   --warn-soft: #34270F; --bad: #EE8080; --bad-soft: #3A1B1B; --hl-cut: 86%; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: break-word; }
 .wrap { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: 0 64px; }
 h1, h2, h3 { line-height: 1.3; text-wrap: balance; margin: 0; }
 h1 { font-size: 1.85rem; font-weight: 700; letter-spacing: -0.01em; }
@@ -399,12 +399,15 @@ function go(step) { stopTicker(); state.step = step; saveLocal(); render(); wind
 
 /* Listening scoring: token alignment with contraction handling */
 const NUM_WORDS = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine", "10": "ten" };
+// Contractions typed without the apostrophe (common on phone keyboards). Real words such as its, were, well, ill-as-sick are left out except "ill", which none of the test sentences use.
+const BARE_CONTRACTIONS = { im: "i'm", ive: "i've", ill: "i'll", youre: "you're", youve: "you've", youll: "you'll", theyre: "they're", theyve: "they've", shes: "she's", hes: "he's", thats: "that's", whats: "what's", theres: "there's", dont: "don't", doesnt: "doesn't", didnt: "didn't", cant: "can't", wont: "won't", isnt: "isn't", wasnt: "wasn't", arent: "aren't", werent: "weren't", shouldnt: "shouldn't", couldnt: "couldn't", wouldnt: "wouldn't", havent: "haven't", hasnt: "hasn't", hadnt: "hadn't" };
 function tokenize(s) {
-  const raw = String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z0-9' ]+/g, " ").split(/\s+/).filter(Boolean);
+  const raw = String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/(\d)([a-z])/g, "$1 $2").replace(/([a-z])(\d)/g, "$1 $2").split(/\s+/).filter(Boolean);
   const out = [];
   for (let w of raw) {
     w = w.replace(/^'+|'+$/g, "");
     if (!w) continue;
+    if (BARE_CONTRACTIONS[w]) w = BARE_CONTRACTIONS[w];
     if (NUM_WORDS[w]) { out.push(NUM_WORDS[w]); continue; }
     if (w === "won't") { out.push("will", "not"); continue; }
     if (w === "can't" || w === "cannot") { out.push("can", "not"); continue; }

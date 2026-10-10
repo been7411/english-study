@@ -1,0 +1,887 @@
+<title>눈에서 입으로</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Layout: same clinic-clipboard column as the diagnostic; a home "today" sheet that opens one drill at a time. */
+:root {
+  --paper: #F2F5F4;
+  --sheet: #FFFFFF;
+  --ink: #15201E;
+  --ink-2: #4B5B58;
+  --ink-3: #788683;
+  --rule: #D3DCD9;
+  --track: #E4EBE9;
+  --accent: #0D5A6A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEBEE;
+  --mark: #F2D46A;
+  --good: #2B7649;
+  --good-soft: #E0EFE5;
+  --warn: #9C6210;
+  --warn-soft: #F6EAD3;
+  --bad: #AE3838;
+  --bad-soft: #F5DFDF;
+  --hl-cut: 60%;
+  --f-ui: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-en: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1514; --sheet: #162120; --ink: #E3ECEA; --ink-2: #A9B8B5; --ink-3: #7F8F8C;
+    --rule: #2A3836; --track: #22302E; --accent: #62B4C6; --accent-ink: #062228; --accent-soft: #173A42;
+    --mark: #D8BC4E; --good: #6CC18E; --good-soft: #17301F; --warn: #E0A54B; --warn-soft: #34270F;
+    --bad: #EE8080; --bad-soft: #3A1B1B; --hl-cut: 86%; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1514; --sheet: #162120; --ink: #E3ECEA; --ink-2: #A9B8B5; --ink-3: #7F8F8C;
+  --rule: #2A3836; --track: #22302E; --accent: #62B4C6; --accent-ink: #062228; --accent-soft: #173A42;
+  --mark: #D8BC4E; --good: #6CC18E; --good-soft: #17301F; --warn: #E0A54B; --warn-soft: #34270F;
+  --bad: #EE8080; --bad-soft: #3A1B1B; --hl-cut: 86%; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; word-break: keep-all; overflow-wrap: break-word; }
+.wrap { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 64px; }
+h1, h2, h3 { line-height: 1.3; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; font-weight: 700; }
+h3 { font-size: 1.02rem; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--ink-2); }
+.small { font-size: 0.875rem; }
+.eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.hl { background: linear-gradient(transparent var(--hl-cut), var(--mark) var(--hl-cut)); padding: 0 2px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.stack-sm { display: flex; flex-direction: column; gap: 8px; }
+.stack-lg { display: flex; flex-direction: column; gap: 28px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.between { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.en { font-family: var(--f-en); }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 20px; }
+@media (min-width: 600px) { .sheet { padding: 28px 30px; } }
+button { font: inherit; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; font-size: 1rem; text-decoration: none; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn-ghost:hover { border-color: var(--ink-3); }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: 0.88rem; }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.link { color: var(--accent); font-weight: 600; }
+:focus-visible { outline: 3px solid var(--mark); outline-offset: 2px; }
+input[type="text"], input[type="number"], textarea, select { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; width: 100%; }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+.answer-input { font-family: var(--f-en); font-size: 1.15rem; }
+
+/* Home */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.stat { padding: 12px 4px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .k { font-size: 0.78rem; color: var(--ink-3); font-weight: 600; }
+.stat .v { font-family: var(--f-num); font-size: 1.4rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .s { font-size: 0.75rem; color: var(--ink-2); }
+.set-card { padding: 16px 18px; border-radius: 8px; background: var(--paper); border: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
+.set-card .tip { font-size: 0.93rem; color: var(--ink-2); }
+.steps { display: flex; flex-direction: column; }
+.stepline { display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--rule); }
+.stepline:last-child { border-bottom: 1px solid var(--rule); }
+.stepline .n { font-family: var(--f-num); font-size: 0.85rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--rule); color: var(--ink-2); }
+.stepline.done .n { background: var(--good); border-color: var(--good); color: var(--sheet); }
+.stepline .t { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.stepline .t b { font-weight: 600; }
+.stepline .t span { font-size: 0.85rem; color: var(--ink-2); }
+.cal { display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px; }
+.cal i { aspect-ratio: 1; max-width: 100%; border-radius: 4px; background: var(--track); display: block; }
+.cal i.part { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.cal i.full { background: var(--accent); }
+.cal i.today { outline: 2px solid var(--mark); outline-offset: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.78rem; color: var(--ink-2); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; background: var(--track); }
+.legend i.part { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.legend i.full { background: var(--accent); }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font-size: 0.74rem; color: var(--ink-3); font-weight: 600; }
+td.num, th.num { text-align: right; }
+
+/* Drill */
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.progress { height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+.progress > div { height: 100%; background: var(--accent); }
+.prompt { padding: 22px 18px; border-radius: 8px; background: var(--paper); border: 1px solid var(--rule); display: flex; flex-direction: column; gap: 12px; }
+.prompt-ko { font-size: 1.4rem; font-weight: 600; line-height: 1.5; }
+.prompt-en { font-family: var(--f-en); font-size: 1.3rem; line-height: 1.5; }
+.counter { font-family: var(--f-num); font-size: 0.88rem; color: var(--ink-2); }
+.compare { display: grid; gap: 10px; }
+.compare-row { display: grid; grid-template-columns: 4.6rem 1fr; gap: 10px; align-items: baseline; }
+.compare-row .lab { font-size: 0.8rem; color: var(--ink-3); font-weight: 600; }
+.compare-row .val { font-family: var(--f-en); font-size: 1.1rem; min-width: 0; overflow-wrap: anywhere; }
+.miss { background: var(--bad-soft); color: var(--bad); border-radius: 3px; padding: 0 3px; text-decoration: underline wavy; text-underline-offset: 3px; }
+.point { font-size: 0.92rem; padding: 10px 12px; border-left: 3px solid var(--mark); background: var(--paper); border-radius: 0 6px 6px 0; }
+.grade { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grade .btn { padding: 0 6px; font-size: 0.9rem; flex-direction: column; gap: 0; line-height: 1.2; min-height: 56px; }
+.grade .btn small { font-weight: 400; font-size: 0.72rem; opacity: 0.85; }
+.g-ok { border-color: var(--good); color: var(--good); background: var(--good-soft); }
+.g-minor { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+.g-bad { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
+.countdown { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.countdown > div { height: 100%; background: var(--mark); width: 100%; transform-origin: left; animation: shrink 5s linear forwards; }
+@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.shadow-dots { display: flex; gap: 6px; align-items: center; }
+.shadow-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--track); display: block; }
+.shadow-dots i.on { background: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 10px; font-size: 0.82rem; font-family: var(--f-num); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.notice { padding: 12px 14px; border-radius: 8px; background: var(--warn-soft); font-size: 0.93rem; }
+.ok-box { padding: 12px 14px; border-radius: 8px; background: var(--good-soft); font-size: 0.93rem; }
+.method { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; font-size: 0.95rem; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; }
+.check input { margin-top: 5px; width: 18px; height: 18px; accent-color: var(--accent); }
+.fb { display: flex; flex-direction: column; gap: 12px; }
+.fb .corrected { font-family: var(--f-en); font-size: 1.05rem; line-height: 1.7; padding: 14px 16px; background: var(--paper); border-radius: 8px; border: 1px solid var(--rule); white-space: pre-wrap; }
+.err { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 10px 0; border-top: 1px solid var(--rule); }
+.err .w { font-family: var(--f-en); color: var(--bad); text-decoration: line-through; }
+.err .r { font-family: var(--f-en); color: var(--good); font-weight: 600; }
+.err .y { font-size: 0.85rem; color: var(--ink-2); }
+details { border-top: 1px solid var(--rule); padding: 10px 0; }
+details summary { cursor: pointer; font-size: 0.92rem; }
+.foot { margin-top: 24px; font-size: 0.8rem; color: var(--ink-3); display: flex; gap: 8px; align-items: center; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-3); flex: 0 0 auto; }
+.dot.ok { background: var(--good); } .dot.err { background: var(--bad); } .dot.wait { background: var(--warn); }
+@media (max-width: 480px) {
+  h1 { font-size: 1.45rem; }
+  .compare-row { grid-template-columns: 1fr; gap: 2px; }
+  .prompt-ko { font-size: 1.25rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: rise .22s ease-out; }
+  @keyframes rise { from { transform: translateY(5px); } to { transform: none; } }
+}
+</style>
+
+<main class="wrap">
+  <div id="app"></div>
+  <div class="foot"><span class="dot wait" id="foot-dot"></span><span id="foot-text">저장소 연결 확인 중…</span></div>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+/* ───────────── Content: 20 sets × 6 sentences, ordered by the 2026-10-10 diagnosis ───────────── */
+
+const SETS = [
+  { t: "과거는 그냥 과거형", tip: "진단에서 had를 과거 표시로 5번 썼습니다 (I had meet, I had jogging). 지난 일은 그냥 과거형입니다. had는 ‘가지고 있었다’이거나 ‘과거보다 더 과거’일 때만 씁니다.", c: [
+    ["어제 친구를 만났어.", "I met a friend yesterday."],
+    ["지난 주말에 도서관에 갔어.", "I went to the library last weekend."],
+    ["오늘 아침에 커피를 안 마셨어.", "I didn't have coffee this morning."],
+    ["회의가 너무 길었어.", "The meeting was too long."],
+    ["그 영화 어땠어?", "How was the movie?"],
+    ["어젯밤에 잠을 잘 못 잤어.", "I didn't sleep well last night."]] },
+  { t: "해 본 적 있다 · 아직 안 했다", tip: "‘~해 본 적 있어’, ‘아직 안 했어’, ‘방금 했어’는 have + 과거분사. Have you ever를 한 단어처럼 통째로 꺼내세요.", c: [
+    ["나 런던에 가 본 적 있어.", "I've been to London."],
+    ["그런 얘기는 처음 들어 봐.", "I've never heard that before."],
+    ["너 이 책 읽어 봤어?", "Have you read this book?"],
+    ["아직 점심 안 먹었어.", "I haven't had lunch yet."],
+    ["방금 이메일 보냈어요.", "I've just sent you the email."],
+    ["새로 온 매니저 만나 봤어?", "Have you met the new manager?"]] },
+  { t: "~한 지 얼마나 됐다", tip: "진단 11번 I had been working on 5 years → I've been working here for five years. had가 아니라 have, on이 아니라 for.", c: [
+    ["여기서 일한 지 3년 됐어.", "I've worked here for three years."],
+    ["한 시간째 기다리고 있어.", "I've been waiting for an hour."],
+    ["영어 공부한 지 얼마나 됐어?", "How long have you been studying English?"],
+    ["아침부터 계속 비가 오고 있어.", "It's been raining since this morning."],
+    ["요즘 잠을 잘 못 자고 있어.", "I haven't been sleeping well lately."],
+    ["우리 알고 지낸 지 10년 됐어.", "We've known each other for ten years."]] },
+  { t: "정해진 계획 말하기", tip: "이미 정한 약속은 현재진행형(I'm visiting), 하려고 마음먹은 일은 be going to, 지금 막 정한 일은 will.", c: [
+    ["이번 주말에 부모님 뵈러 가.", "I'm visiting my parents this weekend."],
+    ["오늘 저녁에 뭐 해?", "What are you doing tonight?"],
+    ["다음 달에 이사 가.", "I'm moving next month."],
+    ["이거 끝나면 바로 전화할게.", "I'll call you right after this."],
+    ["회의는 3시에 시작해.", "The meeting starts at three."],
+    ["이번 휴가 때 뭐 할 거야?", "What are you going to do on your vacation?"]] },
+  { t: "예전엔 그랬다: used to", tip: "‘예전엔 ~했는데 지금은 안 해’는 used to + 동사원형. had로 과거 습관을 나타낼 수 없습니다 (I had jogging ✗).", c: [
+    ["예전엔 담배를 피웠는데 지금은 안 피워.", "I used to smoke, but I don't anymore."],
+    ["어렸을 때 여기 살았었어.", "I used to live here when I was a kid."],
+    ["예전엔 달랐어.", "It used to be different."],
+    ["요즘엔 운동 안 해.", "I don't work out these days."],
+    ["보통 7시에 일어나.", "I usually get up at seven."],
+    ["예전만큼 자주 못 만나.", "We don't see each other as often as we used to."]] },
+  { t: "문장 속 질문: 간접의문문", tip: "문장 안에 들어간 질문은 평서문 어순입니다. Where is it? → Do you know where it is? 진단 영작 2번과 듣기 2번이 모두 여기서 틀렸습니다.", c: [
+    ["회의가 몇 시에 시작하는지 알아?", "Do you know what time the meeting starts?"],
+    ["화장실이 어디 있는지 알려 주실래요?", "Could you tell me where the restroom is?"],
+    ["그게 무슨 뜻인지 모르겠어.", "I don't know what that means."],
+    ["민수가 올지 잘 모르겠어.", "I'm not sure if Minsu is coming."],
+    ["왜 그렇게 생각하는지 궁금해.", "I wonder why you think so."],
+    ["얼마인지 여쭤봐도 될까요?", "Can I ask how much it is?"]] },
+  { t: "부탁하고 허락 구하기", tip: "Could you…? / Do you mind if I…? / Can you help me with…? 회의와 여행에서 가장 자주 쓰는 덩어리입니다.", c: [
+    ["창문 좀 열어 주실래요?", "Could you open the window?"],
+    ["여기 앉아도 될까요?", "Do you mind if I sit here?"],
+    ["잠깐 시간 괜찮으세요?", "Do you have a minute?"],
+    ["다시 한번 말씀해 주시겠어요?", "Could you say that again?"],
+    ["조금만 천천히 말씀해 주실 수 있나요?", "Could you speak a little more slowly?"],
+    ["이거 좀 도와줄 수 있어?", "Can you help me with this?"]] },
+  { t: "의견 묻고 말하기", tip: "‘어떻게 생각해’는 What do you think (How 아님). 의견을 말할 땐 I think로 시작하면 뒤를 만들 시간이 생깁니다.", c: [
+    ["이 계획 어떻게 생각해?", "What do you think of this plan?"],
+    ["제 생각엔 좀 위험한 것 같아요.", "I think it's a bit risky."],
+    ["네 말에 동의해.", "I agree with you."],
+    ["꼭 그런 건 아닌 것 같아.", "I don't think that's necessarily true."],
+    ["좋은 질문이네요.", "That's a good question."],
+    ["너라면 어떻게 하겠어?", "What would you do?"]] },
+  { t: "회의에서 버티는 말", tip: "못 알아들었을 때 쓰는 말(I'm not sure I follow)과 시간을 버는 말(What I mean is…)이 있으면 회의에서 덜 얼어붙습니다.", c: [
+    ["질문 하나 해도 될까요?", "Can I ask a question?"],
+    ["무슨 말씀인지 잘 이해가 안 돼요.", "I'm not sure I follow."],
+    ["제 말은, 시간이 더 필요하다는 거예요.", "What I mean is, we need more time."],
+    ["확인하고 다시 연락드릴게요.", "I'll check and get back to you."],
+    ["그 부분 좀 자세히 설명해 주시겠어요?", "Could you walk me through that part?"],
+    ["다음 주까지 끝낼 수 있을 것 같아요.", "I think we can finish it by next week."]] },
+  { t: "부정의문문 대답과 맞장구", tip: "대답은 질문 모양이 아니라 사실 기준입니다. 안 고프면 No, 고프면 Yes. 한국어 ‘응/아니’와 반대로 느껴지는 게 정상입니다.", c: [
+    ["“배 안 고파?” “응, 안 고파.”", "“Aren't you hungry?” “No, I'm not.”"],
+    ["“그거 몰랐어?” “응, 몰랐어.”", "“Didn't you know that?” “No, I didn't.”"],
+    ["너도 오는 거지?", "You're coming too, right?"],
+    ["“피곤하지 않아?” “아니, 피곤해.”", "“Aren't you tired?” “Yes, I am.”"],
+    ["날씨 좋다, 그렇지?", "It's a nice day, isn't it?"],
+    ["나도 그거 안 좋아해.", "I don't like it either."]] },
+  { t: "했어야 했는데: should have", tip: "듣기 3번 I should have left…를 두 번 듣고 0%였습니다. should have는 ‘슈러브’, could have는 ‘쿠러브’처럼 들립니다. 소리째 외우세요.", c: [
+    ["좀 더 일찍 일어났어야 했는데.", "I should have gotten up earlier."],
+    ["미리 말해 줄 수도 있었잖아.", "You could have told me."],
+    ["그거 사지 말았어야 했어.", "I shouldn't have bought it."],
+    ["나라면 그렇게 안 했을 거야.", "I wouldn't have done that."],
+    ["더 나빠질 수도 있었어.", "It could have been worse."],
+    ["지금쯤 민수 도착했겠다.", "Minsu must have arrived by now."]] },
+  { t: "만약 ~라면: 가정법", tip: "지금과 반대는 If + 과거형, would + 동사원형. 과거와 반대는 If + had p.p. → would have p.p. 입니다. I'd는 I would 또는 I had의 줄임이라 소리가 아주 작습니다.", c: [
+    ["시간이 있으면 같이 갈 텐데.", "If I had time, I'd go with you."],
+    ["내가 너라면 그냥 물어보겠어.", "If I were you, I'd just ask."],
+    ["알았으면 말해 줬을 거야.", "If I'd known, I would have told you."],
+    ["돈이 많으면 뭐 하고 싶어?", "What would you do if you had a lot of money?"],
+    ["비가 안 왔으면 갔을 텐데.", "If it hadn't rained, we would have gone."],
+    ["영어를 잘하면 좋겠다.", "I wish I could speak English well."]] },
+  { t: "시간이 걸리다: It takes", tip: "‘~하는 데 (시간) 걸려’는 It takes + 시간 + to 동사. How long does it take to…? 를 통째로.", c: [
+    ["회사까지 30분 걸려.", "It takes thirty minutes to get to work."],
+    ["이거 끝내는 데 얼마나 걸릴까요?", "How long will it take to finish this?"],
+    ["생각보다 오래 걸렸어.", "It took longer than I thought."],
+    ["익숙해지는 데 시간이 좀 걸려.", "It takes some time to get used to it."],
+    ["공항까지 택시로 얼마나 걸려요?", "How long does it take to get to the airport by taxi?"],
+    ["금방 끝나요.", "It won't take long."]] },
+  { t: "맡겨서 하다: get + 목적어 + p.p.", tip: "미용실에서 자른 머리는 I got my hair cut. I cut my hair는 내가 직접 잘랐다는 뜻입니다.", c: [
+    ["머리 좀 잘라야겠다.", "I need to get my hair cut."],
+    ["차 고쳤어 (정비소에서).", "I got my car fixed."],
+    ["휴대폰 화면 갈아야 해.", "I need to get my phone screen replaced."],
+    ["눈 검사 받았어.", "I had my eyes checked."],
+    ["오늘 안에 끝내 놓을게.", "I'll get this done today."],
+    ["세탁소에 정장 맡겼어.", "I had my suit dry-cleaned."]] },
+  { t: "명사 뒤에 설명 붙이기", tip: "한국어는 꾸미는 말이 앞(내가 만난 사람), 영어는 뒤(the person I met). 명사를 먼저 말하고 설명을 뒤에 붙이세요. 앞에서부터 처리하는 연습이기도 합니다.", c: [
+    ["네가 추천해 준 책 읽고 있어.", "I'm reading the book you recommended."],
+    ["여기가 내가 말한 식당이야.", "This is the restaurant I told you about."],
+    ["필요한 건 다 있어.", "I have everything I need."],
+    ["내 옆자리에 앉은 사람이 새 팀장이야.", "The person sitting next to me is the new team leader."],
+    ["내가 제일 좋아하는 건 아침 산책이야.", "What I like most is my morning walk."],
+    ["우리가 갔던 그 카페 기억나?", "Do you remember the cafe we went to?"]] },
+  { t: "긴 문장의 뼈대", tip: "It's not that…, it's just that… / The thing is… 같은 말은 긴 문장의 지도입니다. 이 덩어리를 알면 뒤에 무엇이 올지 예상하며 들을 수 있습니다.", c: [
+    ["일이 싫은 게 아니라, 그냥 너무 많아.", "It's not that I don't like my job, it's just that there's too much work."],
+    ["문제는 시간이 없다는 거야.", "The thing is, we don't have time."],
+    ["솔직히 말하면, 잘 모르겠어.", "To be honest, I'm not sure."],
+    ["어쨌든, 본론으로 돌아가죠.", "Anyway, let's get back to the point."],
+    ["그건 그렇고, 주말 잘 보냈어?", "By the way, did you have a good weekend?"],
+    ["내 말은, 서두를 필요 없다는 거야.", "What I'm saying is, there's no need to rush."]] },
+  { t: "접속사로 이어 말하기", tip: "as soon as, when, until, even though 뒤에는 미래 일이라도 현재형을 씁니다 (as soon as I get there).", c: [
+    ["도착하자마자 전화할게.", "I'll call you as soon as I get there."],
+    ["결과 나오면 알려 주세요.", "Let me know when you get the results."],
+    ["비가 오긴 했지만 재미있었어.", "Even though it rained, we had fun."],
+    ["늦을 수도 있으니까 먼저 시작하세요.", "I might be late, so please start without me."],
+    ["다 끝날 때까지 기다릴게.", "I'll wait until you're done."],
+    ["시간 있을 때 한번 봐 주실래요?", "Could you take a look when you have time?"]] },
+  { t: "업무 이메일", tip: "이메일은 덩어리를 그대로 가져다 쓰는 글입니다. 이 여섯 문장이면 업무 메일의 처음과 끝을 다 쓸 수 있습니다.", c: [
+    ["일정에 대해 문의드리려고 메일 드립니다.", "I'm writing to ask about the schedule."],
+    ["파일 첨부했습니다.", "I've attached the file."],
+    ["지난주 회의 건으로 다시 연락드립니다.", "I'm following up on last week's meeting."],
+    ["금요일까지 회신 주시면 감사하겠습니다.", "I'd appreciate it if you could reply by Friday."],
+    ["궁금한 점 있으시면 언제든 연락 주세요.", "Please let me know if you have any questions."],
+    ["답장이 늦어서 죄송합니다.", "Sorry for the late reply."]] },
+  { t: "여행", tip: "여행 영어는 Can I get…? / Is there… near here? / How do I get to…? 세 덩어리로 대부분 해결됩니다.", c: [
+    ["김 이름으로 예약했는데요.", "I have a reservation under Kim."],
+    ["여기서 역까지 어떻게 가요?", "How do I get to the station from here?"],
+    ["근처에 약국 있나요?", "Is there a pharmacy near here?"],
+    ["창가 자리로 주실 수 있나요?", "Can I get a window seat?"],
+    ["카드로 계산해도 되나요?", "Can I pay by card?"],
+    ["체크아웃이 몇 시예요?", "What time is check-out?"]] },
+  { t: "비교하기와 a → it", tip: "처음 말하는 건 a, 이미 말한 건 the 또는 it. 비교급을 강조할 땐 much / a lot. 진단 영작 4번(much 빠짐), 9번(a friend 빠짐)과 같은 지점입니다.", c: [
+    ["생각보다 훨씬 비쌌어.", "It was much more expensive than I thought."],
+    ["지금까지 본 것 중에 이게 제일 좋아.", "This is the best one I've ever seen."],
+    ["예상만큼 어렵진 않았어.", "It wasn't as hard as I expected."],
+    ["노트북을 하나 샀는데, 너무 느려.", "I bought a laptop, but it's really slow."],
+    ["갈수록 쉬워지고 있어.", "It's getting easier and easier."],
+    ["둘 중에 뭐가 더 나아?", "Which one is better?"]] },
+];
+const CARDS = SETS.flatMap((s, si) => s.c.map((c, ci) => ({ id: `s${si + 1}-${ci + 1}`, set: si + 1, ko: c[0], en: c[1] })));
+const INTERVALS = [1, 2, 4, 7, 14, 30];
+const MOUTH_CAP = 20;
+const WRITE_TOPICS = [
+  "이번 주에 있었던 일 하나와 그때 느낀 점",
+  "요즘 일에서 가장 신경 쓰이는 것",
+  "다음 휴가나 주말 계획",
+  "최근에 산 물건이나 본 영상 후기",
+  "영어 공부를 하면서 이번 주에 달라진 점",
+];
+const FUNCTION_WORDS = new Set("a an the to of in on at for with about from by as and but or if that this it is am are was were be been being have has had 'd 's 'll will would should could can do does did not no i you he she we they me him her us them my your his our their what when where how let just so up out there".split(" "));
+
+/* ───────────── Dates ───────────── */
+
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const addDays = (s, n) => { const [y, m, d] = s.split("-").map(Number); const dt = new Date(y, m - 1, d); dt.setDate(dt.getDate() + n); return ymd(dt); };
+
+/* ───────────── State ───────────── */
+
+const LS_P = "e2m-progress-v1", LS_S = "e2m-sessions-v1", LS_W = "e2m-writings-v1";
+const lsGet = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? fb : v; } catch (e) { return fb; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+let progress = lsGet(LS_P, null) || { v: 1, startedOn: null, assign: {}, next: 1, cards: {}, custom: [], prefs: { rate: 1 }, updatedAt: 0 };
+let sessions = lsGet(LS_S, {});
+let writings = lsGet(LS_W, []);
+let view = { name: "home" };
+
+const allCards = () => CARDS.concat(progress.custom || []);
+const cardById = id => allCards().find(c => c.id === id);
+function session(date) {
+  if (!sessions[date]) sessions[date] = { date, set: progress.assign[date] || null, ear: { done: false, queue: null, i: 0, items: [] }, mouth: { done: false, queue: null, i: 0, fast: 0, slow: 0, fail: 0 }, flow: { done: false, episode: "", extraMin: 0 }, activeSec: 0, updatedAt: 0 };
+  return sessions[date];
+}
+
+/* ───────────── Remote store (artifact db) ───────────── */
+
+let db = null, sample = null, storeState = "wait", storeErr = "";
+const timers = {}, chains = {};
+function setFoot() {
+  const dot = document.getElementById("foot-dot"), txt = document.getElementById("foot-text");
+  dot.className = "dot " + ({ ok: "ok", err: "err", off: "", wait: "wait" }[storeState]);
+  txt.textContent = storeState === "ok" ? "기록이 저장되고 있습니다. Claude가 진행 상황을 읽을 수 있습니다."
+    : storeState === "off" ? "이 화면에서는 기록이 이 기기에만 저장됩니다."
+    : storeState === "err" ? `저장 실패 (${storeErr}). 기록은 이 기기에 남아 있습니다.`
+    : "저장소 연결 확인 중…";
+}
+function persist(kind, date) {
+  if (kind === "progress") { progress.updatedAt = Date.now(); lsSet(LS_P, progress); queueWrite("progress/main", () => progress); }
+  if (kind === "session") { const s = sessions[date]; s.updatedAt = Date.now(); lsSet(LS_S, sessions); queueWrite("sessions/" + date, () => sessions[date]); }
+}
+function queueWrite(path, getData) {
+  if (!db) return;
+  clearTimeout(timers[path]);
+  timers[path] = setTimeout(() => {
+    const data = JSON.parse(JSON.stringify(getData()));
+    chains[path] = (chains[path] || Promise.resolve())
+      .then(() => db.doc(path).set(data))
+      .then(() => { storeState = "ok"; setFoot(); })
+      .catch(e => { storeState = "err"; storeErr = (e && e.code) || "unknown"; setFoot(); });
+  }, 900);
+}
+function initStore() {
+  const use = window.claude && typeof window.claude.use === "function" ? window.claude.use.bind(window.claude) : null;
+  if (!use) { storeState = "off"; setFoot(); return; }
+  use("sample").then(s => { sample = s; if (view.name === "write") render(); }).catch(() => {});
+  use("db").then(async ns => {
+    db = ns;
+    if (!db) { storeState = "off"; setFoot(); return; }
+    storeState = "ok"; setFoot();
+    try {
+      const p = await db.doc("progress/main").get();
+      if (p.exists && (p.data().updatedAt || 0) > (progress.updatedAt || 0)) { progress = JSON.parse(JSON.stringify(p.data())); lsSet(LS_P, progress); }
+      else if (progress.startedOn) queueWrite("progress/main", () => progress);
+      const ss = await db.collection("sessions").orderBy("date", "desc").limit(60).get();
+      const remote = {};
+      ss.docs.forEach(d => { const v = d.data(); if (v && v.date) remote[v.date] = v; });
+      for (const [date, v] of Object.entries(remote)) if (!sessions[date] || (v.updatedAt || 0) > (sessions[date].updatedAt || 0)) sessions[date] = JSON.parse(JSON.stringify(v));
+      for (const [date, v] of Object.entries(sessions)) if (!remote[date] || (v.updatedAt || 0) > (remote[date].updatedAt || 0)) queueWrite("sessions/" + date, () => sessions[date]);
+      lsSet(LS_S, sessions);
+      const ws = await db.collection("writings").orderBy("createdAt", "desc").limit(20).get();
+      const rw = ws.docs.map(d => d.data()).filter(Boolean);
+      const ids = new Set(rw.map(w => w.id));
+      writings = rw.concat(writings.filter(w => !ids.has(w.id))).sort((a, b) => b.createdAt - a.createdAt);
+      lsSet(LS_W, writings);
+      if (view.name === "home" || view.name === "write") render();
+    } catch (e) { storeState = "err"; storeErr = (e && e.code) || "unknown"; setFoot(); }
+  }).catch(() => { storeState = "off"; setFoot(); });
+}
+
+/* ───────────── Speech ───────────── */
+
+const ttsOK = typeof window.speechSynthesis !== "undefined" && typeof window.SpeechSynthesisUtterance !== "undefined";
+let voices = [], voice = null;
+function loadVoices() {
+  if (!ttsOK) return;
+  voices = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang));
+  if (!voices.length) return;
+  const pref = progress.prefs && progress.prefs.voice && voices.find(v => v.name === progress.prefs.voice);
+  const score = v => (/en[-_]US/i.test(v.lang) ? 4 : /en[-_]GB/i.test(v.lang) ? 2 : 0) + (/(natural|neural|premium|enhanced|samantha|aria|jenny|ava|allison|google us)/i.test(v.name) ? 3 : 0) + (v.localService ? 1 : 0);
+  voice = pref || voices.slice().sort((a, b) => score(b) - score(a))[0];
+}
+if (ttsOK) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text, rate) {
+  if (!ttsOK) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[“”]/g, ""));
+  u.lang = voice ? voice.lang : "en-US";
+  if (voice) u.voice = voice;
+  u.rate = rate || (progress.prefs && progress.prefs.rate) || 1;
+  speechSynthesis.speak(u);
+}
+
+/* ───────────── Dictation scoring (same rules as the diagnostic) ───────────── */
+
+const NUM_WORDS = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine", "10": "ten" };
+const BARE = { im: "i'm", ive: "i've", ill: "i'll", youre: "you're", youve: "you've", youll: "you'll", theyre: "they're", theyve: "they've", shes: "she's", hes: "he's", thats: "that's", whats: "what's", theres: "there's", dont: "don't", doesnt: "doesn't", didnt: "didn't", cant: "can't", wont: "won't", isnt: "isn't", wasnt: "wasn't", arent: "aren't", werent: "weren't", shouldnt: "shouldn't", couldnt: "couldn't", wouldnt: "wouldn't", havent: "haven't", hasnt: "hasn't", hadnt: "hadn't" };
+function tokenize(s) {
+  const raw = String(s).toLowerCase().replace(/[’‘`]/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/(\d)([a-z])/g, "$1 $2").replace(/([a-z])(\d)/g, "$1 $2").split(/\s+/).filter(Boolean);
+  const out = [];
+  for (let w of raw) {
+    w = w.replace(/^'+|'+$/g, ""); if (!w) continue;
+    if (BARE[w]) w = BARE[w];
+    if (NUM_WORDS[w]) { out.push(NUM_WORDS[w]); continue; }
+    if (w === "won't") { out.push("will", "not"); continue; }
+    if (w === "can't" || w === "cannot") { out.push("can", "not"); continue; }
+    if (w === "gonna") { out.push("going", "to"); continue; }
+    if (w === "wanna") { out.push("want", "to"); continue; }
+    let m;
+    if ((m = w.match(/^(.+)n't$/))) { out.push(m[1], "not"); continue; }
+    if ((m = w.match(/^(.+)'(ll|ve|re|m|d|s)$/))) { out.push(m[1], { ll: "will", ve: "have", re: "are", m: "am", d: "'d", s: "'s" }[m[2]]); continue; }
+    out.push(w);
+  }
+  return out;
+}
+function tokEq(a, b) {
+  if (a === b) return true;
+  const amb = { "'d": ["had", "would"], "'s": ["is", "has"] };
+  return !!((amb[a] && amb[a].includes(b)) || (amb[b] && amb[b].includes(a)));
+}
+function align(refStr, hypStr) {
+  const r = tokenize(refStr), h = tokenize(hypStr), n = r.length, m = h.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = tokEq(r[i], h[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const hit = new Array(n).fill(false); let i = 0, j = 0;
+  while (i < n && j < m) { if (tokEq(r[i], h[j])) { hit[i] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+  return { hit, acc: n ? dp[0][0] / n : 0, missed: r.filter((_, k) => !hit[k]) };
+}
+function markOriginal(text, hit) {
+  let k = 0;
+  return text.split(/\s+/).map(w => { const t = tokenize(w); const ok = t.every((_, q) => hit[k + q]); k += t.length; return t.length && !ok ? `<span class="miss">${esc(w)}</span>` : esc(w); }).join(" ");
+}
+
+/* ───────────── Scheduling ───────────── */
+
+function ensureTodaySet() {
+  const d = today();
+  if (!progress.startedOn) progress.startedOn = d;
+  if (!progress.assign[d] && progress.next <= SETS.length) { progress.assign[d] = progress.next; progress.next++; persist("progress"); }
+  const s = session(d); s.set = progress.assign[d] || null;
+  return s;
+}
+function grade(id, g) {
+  const st = progress.cards[id] || { b: 0, due: today(), n: 0, miss: 0 };
+  if (g === "fast") st.b = Math.min(INTERVALS.length - 1, st.n === 0 ? 1 : st.b + 1);
+  else if (g === "fail") { st.b = 0; st.miss++; }
+  st.n++;
+  st.due = addDays(today(), INTERVALS[st.b]);
+  progress.cards[id] = st;
+}
+function seededShuffle(arr, seedStr) {
+  let h = 2166136261; for (const ch of seedStr) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507); const j = Math.abs(h) % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function earQueue(s) {
+  const own = s.set ? CARDS.filter(c => c.set === s.set).map(c => c.id) : [];
+  const older = allCards().filter(c => progress.cards[c.id] && progress.cards[c.id].b <= 2 && !own.includes(c.id)).map(c => c.id);
+  const extra = seededShuffle(older, s.date).slice(0, own.length ? 2 : 8);
+  return own.concat(extra);
+}
+function mouthQueue(s) {
+  const d = s.date;
+  const own = s.set ? CARDS.filter(c => c.set === s.set).map(c => c.id) : [];
+  const custom = (progress.custom || []).filter(c => !progress.cards[c.id]).slice(0, 3).map(c => c.id);
+  const due = allCards().filter(c => progress.cards[c.id] && progress.cards[c.id].due <= d && !own.includes(c.id))
+    .sort((a, b) => progress.cards[a.id].due.localeCompare(progress.cards[b.id].due) || progress.cards[a.id].b - progress.cards[b.id].b).map(c => c.id);
+  // Reviews first (a gap after the ear step), then new cards; new cards always fit.
+  return due.slice(0, Math.max(0, MOUTH_CAP - own.length - custom.length)).concat(custom, own);
+}
+
+/* ───────────── Helpers ───────────── */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let activeStart = null;
+function startActive() { activeStart = Date.now(); }
+function stopActive() {
+  if (activeStart == null) return;
+  const s = session(today()); s.activeSec = (s.activeSec || 0) + Math.round((Date.now() - activeStart) / 1000); activeStart = null; persist("session", today());
+}
+function go(name, extra) { stopActive(); if (ttsOK) speechSynthesis.cancel(); view = Object.assign({ name }, extra || {}); render(); window.scrollTo(0, 0); }
+function rateSeg() {
+  const r = (progress.prefs && progress.prefs.rate) || 1;
+  return `<div class="seg" role="group" aria-label="음성 속도">${[0.85, 1, 1.15].map(v => `<button type="button" data-rate="${v}" aria-pressed="${r === v ? "true" : "false"}">${v === 1 ? "1.0" : v}×</button>`).join("")}</div>`;
+}
+function bindRate() {
+  document.querySelectorAll("[data-rate]").forEach(b => b.onclick = () => {
+    progress.prefs = progress.prefs || {}; progress.prefs.rate = Number(b.dataset.rate); persist("progress");
+    document.querySelectorAll("[data-rate]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  });
+}
+const doneCount = s => s ? [s.ear.done, s.mouth.done, s.flow.done].filter(Boolean).length : 0;
+
+/* ───────────── Views ───────────── */
+
+function render() {
+  ({ home: renderHome, ear: renderEar, mouth: renderMouth, flow: renderFlow, write: renderWrite }[view.name] || renderHome)();
+}
+
+function renderHome() {
+  const d = today();
+  const s = sessions[d];
+  const setNo = progress.assign[d] || (progress.next <= SETS.length ? progress.next : null);
+  const set = setNo ? SETS[setNo - 1] : null;
+  const daysDone = Object.values(sessions).filter(x => doneCount(x) > 0).length;
+  let streak = 0, cur = doneCount(s) > 0 ? d : addDays(d, -1);
+  while (doneCount(sessions[cur]) > 0) { streak++; cur = addDays(cur, -1); }
+  const known = Object.values(progress.cards).filter(c => c.b >= 3).length;
+  const dueN = allCards().filter(c => progress.cards[c.id] && progress.cards[c.id].due <= d).length;
+  const cal = Array.from({ length: 28 }, (_, k) => addDays(d, k - 27)).map(day => {
+    const n = doneCount(sessions[day]);
+    return `<i class="${n === 3 ? "full" : n > 0 ? "part" : ""} ${day === d ? "today" : ""}" title="${day}: ${n}/3"></i>`;
+  }).join("");
+  const recent = Object.values(sessions).filter(x => doneCount(x) > 0).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
+  const finished = progress.next > SETS.length && !progress.assign[d];
+  const step = (n, key, title, sub, label) => {
+    const done = s && s[key].done;
+    return `<div class="stepline ${done ? "done" : ""}"><span class="n">${done ? "✓" : n}</span><span class="t"><b>${title}</b><span>${sub}</span></span><button class="btn ${done ? "btn-ghost btn-sm" : "btn-primary btn-sm"}" data-go="${key}">${done ? "다시" : label}</button></div>`;
+  };
+
+  $("#app").innerHTML = `
+  <section class="sheet stack-lg">
+    <div class="stack-sm">
+      <span class="eyebrow">${progress.startedOn ? `${daysDone}일째 · ${esc(d)}` : "첫날 · " + esc(d)}</span>
+      <h1>오늘의 30분: <span class="hl">듣고, 받아쓰고, 말하기</span></h1>
+      <p class="muted small">진단 결론: 아는 영어를 실시간으로 꺼내지 못하는 상태. 새로 외우지 않고, 이미 아는 문장을 귀와 입으로 옮깁니다. 모든 문장은 반드시 소리 내어.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="k">연속</span><span class="v">${streak}</span><span class="s">일</span></div>
+      <div class="stat"><span class="k">입에 붙은 문장</span><span class="v">${known}</span><span class="s">/ ${allCards().length}</span></div>
+      <div class="stat"><span class="k">복습 대기</span><span class="v">${dueN}</span><span class="s">문장</span></div>
+    </div>
+
+    ${set ? `<div class="set-card">
+      <span class="eyebrow">세트 ${setNo} / ${SETS.length}${progress.assign[d] ? "" : " · 시작하면 열림"}</span>
+      <h2>${esc(set.t)}</h2>
+      <p class="tip">${esc(set.tip)}</p>
+    </div>` : finished ? `<div class="ok-box">20세트를 모두 열었습니다. 이제는 복습만 나옵니다. <b>재진단할 때입니다.</b> Claude에게 “재진단하자”고 말하세요.</div>` : ""}
+
+    <div class="steps">
+      ${step(1, "ear", "귀 · 받아쓰기와 따라 말하기", "오늘 문장을 소리로 먼저 듣고 적은 뒤, 같은 속도로 3번 따라 말하기 · 10분", "시작")}
+      ${step(2, "mouth", "입 · 순간영작", "한국어를 보고 5초 안에 소리 내어 영어로 · 오늘 문장과 복습 · 10분", "시작")}
+      ${step(3, "flow", "흐름 · 음원에 맞춰 읽기", "BBC 6 Minute English 대본 보며 멈추지 않고 1번, 대본 없이 1번 · 10분", "시작")}
+    </div>
+    ${!ttsOK ? `<div class="notice">이 화면에서는 음성이 나오지 않습니다. 휴대폰 Safari·Chrome이나 PC 브라우저에서 이 링크를 열어 주세요. 기록은 저장소를 통해 이어집니다.</div>` : ""}
+
+    <div class="stack-sm">
+      <div class="between"><h3>최근 4주</h3><div class="legend"><span><i></i>안 함</span><span><i class="part"></i>일부</span><span><i class="full"></i>3단계 모두</span></div></div>
+      <div class="cal">${cal}</div>
+    </div>
+
+    ${recent.length ? `<div class="stack-sm"><h3>최근 기록</h3><div class="tbl-wrap"><table>
+      <thead><tr><th>날짜</th><th>세트</th><th class="num">받아쓰기</th><th class="num">바로 나옴</th><th>흐름</th><th class="num">시간</th></tr></thead>
+      <tbody>${recent.map(x => {
+        const ea = x.ear.items.length ? Math.round(x.ear.items.reduce((t, it) => t + it.acc, 0) / x.ear.items.length) + "%" : "–";
+        const mt = x.mouth.fast + x.mouth.slow + x.mouth.fail;
+        return `<tr><td>${esc(x.date.slice(5))}</td><td>${x.set || "복습"}</td><td class="num">${ea}</td><td class="num">${mt ? Math.round(x.mouth.fast / mt * 100) + "%" : "–"}</td><td>${x.flow.done ? "✓" : "–"}</td><td class="num">${Math.round((x.activeSec || 0) / 60)}분</td></tr>`;
+      }).join("")}</tbody></table></div></div>` : ""}
+
+    <div class="between" style="padding-top:4px;border-top:1px solid var(--rule)">
+      <div class="stack-sm" style="gap:2px;padding-top:12px"><b>주간 작문</b><span class="small muted">일요일 5분. 쓰고, Claude에게 교정받고, 교정된 문장을 카드로.</span></div>
+      <button class="btn btn-ghost btn-sm" data-go="write" style="margin-top:12px">작문하기</button>
+    </div>
+  </section>`;
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
+    const k = b.dataset.go, cur = sessions[d];
+    if (cur && k === "ear" && cur.ear.done) { cur.ear.i = 0; cur.ear.items = []; }
+    if (cur && k === "mouth" && cur.mouth.done) { go("mouth", { practice: true, pi: 0 }); return; }
+    go(k);
+  });
+}
+
+/* Ear: dictation → compare → shadow ×3 */
+function renderEar() {
+  const s = ensureTodaySet();
+  const E = s.ear;
+  if (!E.queue) { E.queue = earQueue(s); E.i = 0; E.items = []; persist("session", s.date); }
+  if (!E.queue.length) { $("#app").innerHTML = `<section class="sheet stack"><h2>들을 문장이 없습니다</h2><button class="btn btn-ghost" id="back">돌아가기</button></section>`; $("#back").onclick = () => go("home"); return; }
+  if (activeStart == null) startActive();
+  if (E.i >= E.queue.length) {
+    E.done = true; persist("session", s.date); stopActive();
+    const acc = Math.round(E.items.reduce((t, it) => t + it.acc, 0) / Math.max(1, E.items.length));
+    $("#app").innerHTML = `<section class="sheet stack"><span class="eyebrow">귀 · 완료</span><h2>평균 ${acc}% 들었습니다</h2>
+      <p class="muted small">놓친 단어는 대부분 짧고 약하게 발음되는 단어일 겁니다. 그 소리를 입으로 낼 수 있어야 귀에도 들립니다.</p>
+      <div class="row"><button class="btn btn-primary" id="next">다음: 입</button><button class="btn btn-ghost" id="home">홈</button></div></section>`;
+    $("#next").onclick = () => go("mouth"); $("#home").onclick = () => go("home"); return;
+  }
+  const card = cardById(E.queue[E.i]);
+  if (!card) { E.i++; persist("session", s.date); render(); return; }
+  const item = E.items[E.i];
+  const prog = `<div class="progress"><div style="width:${E.i / E.queue.length * 100}%"></div></div>`;
+  if (!item) {
+    $("#app").innerHTML = `
+    <section class="sheet stack">
+      <div class="topbar"><span class="eyebrow">1 귀 · 받아쓰기</span><span class="counter">${E.i + 1} / ${E.queue.length}</span></div>${prog}
+      <p class="muted small">먼저 듣고 들린 대로 적습니다. 3번까지 들어도 됩니다. 철자는 틀려도 괜찮습니다.</p>
+      <div class="between"><button class="btn btn-primary" id="play">▶ 듣기</button>${rateSeg()}</div>
+      <form id="f" class="stack" autocomplete="off">
+        <input type="text" class="answer-input" id="ans-${card.id}" placeholder="들린 문장을 입력 후 Enter" spellcheck="false" autocomplete="off" autocapitalize="sentences">
+        <div class="row"><button class="btn btn-primary" type="submit">확인</button><button class="btn btn-ghost" type="button" id="none">못 들었어요</button><span class="counter" id="plays">0회 들음</span></div>
+      </form>
+      <button class="btn btn-ghost btn-sm" id="home" style="align-self:flex-start">그만하고 홈으로</button>
+    </section>`;
+    bindRate();
+    let plays = 0;
+    $("#play").onclick = () => { plays++; speak(card.en); $("#plays").textContent = plays + "회 들음"; $("#ans-" + card.id).focus(); };
+    const submit = typed => {
+      const res = align(card.en, typed);
+      E.items[E.i] = { id: card.id, typed, plays, acc: Math.round(res.acc * 100), missed: res.missed, shadow: 0 };
+      persist("session", s.date); render();
+    };
+    $("#f").addEventListener("submit", e => { e.preventDefault(); submit($("#ans-" + card.id).value.trim()); });
+    $("#none").onclick = () => submit("");
+    $("#home").onclick = () => go("home");
+  } else {
+    const res = align(card.en, item.typed);
+    $("#app").innerHTML = `
+    <section class="sheet stack">
+      <div class="topbar"><span class="eyebrow">1 귀 · 따라 말하기</span><span class="counter">${E.i + 1} / ${E.queue.length}</span></div>${prog}
+      <div class="prompt">
+        <div class="compare">
+          <div class="compare-row"><span class="lab">내가 들은 것</span><span class="val">${item.typed ? esc(item.typed) : '<span class="muted">(못 들음)</span>'}</span></div>
+          <div class="compare-row"><span class="lab">원문</span><span class="val">${markOriginal(card.en, res.hit)}</span></div>
+          <div class="compare-row"><span class="lab">뜻</span><span class="val" style="font-family:var(--f-ui);font-size:0.95rem">${esc(card.ko)}</span></div>
+        </div>
+      </div>
+      <p class="small muted">원문을 보면서 들려주는 속도 그대로 3번 따라 말하세요. 밑줄 친 부분은 특히 소리를 흉내 내듯이. 마지막 한 번은 원문을 안 보고.</p>
+      <div class="between">
+        <div class="row"><button class="btn btn-primary" id="sh">▶ 듣고 따라 말하기</button><div class="shadow-dots" id="dots">${[0, 1, 2].map(k => `<i class="${k < item.shadow ? "on" : ""}"></i>`).join("")}</div></div>
+        ${rateSeg()}
+      </div>
+      <div class="row"><button class="btn ${item.shadow >= 3 ? "btn-primary" : "btn-ghost"}" id="next">${E.i + 1 < E.queue.length ? "다음 문장" : "끝내기"}</button></div>
+    </section>`;
+    bindRate();
+    $("#sh").onclick = () => {
+      speak(card.en); item.shadow = (item.shadow || 0) + 1; persist("session", s.date);
+      $("#dots").innerHTML = [0, 1, 2].map(k => `<i class="${k < item.shadow ? "on" : ""}"></i>`).join("");
+      if (item.shadow >= 3) { $("#next").className = "btn btn-primary"; }
+    };
+    $("#next").onclick = () => { E.i++; persist("session", s.date); render(); window.scrollTo(0, 0); };
+  }
+}
+
+/* Mouth: Korean → say it aloud within 5 s → reveal + audio → self-grade */
+function renderPractice() {
+  const s = session(today());
+  const ids = s.set ? CARDS.filter(c => c.set === s.set).map(c => c.id) : (s.mouth.queue || []);
+  if (view.pi >= ids.length) { go("home"); return; }
+  const card = cardById(ids[view.pi]);
+  $("#app").innerHTML = `
+  <section class="sheet stack">
+    <div class="topbar"><span class="eyebrow">입 · 다시 연습 (기록 안 함)</span><span class="counter">${view.pi + 1} / ${ids.length}</span></div>
+    <div class="prompt"><div class="prompt-ko">${esc(card.ko)}</div>${view.revealed ? `<div class="prompt-en">${esc(card.en)}</div>` : `<div class="countdown" aria-hidden="true"><div></div></div>`}</div>
+    <div class="row">${view.revealed ? `<button class="btn btn-primary" id="nx">다음</button><button class="btn btn-ghost" id="ag">▶ 다시 듣기</button>` : `<button class="btn btn-primary" id="rv">말했어요 · 정답 보기</button>`}<button class="btn btn-ghost btn-sm" id="home">홈으로</button></div>
+  </section>`;
+  if (view.revealed) { speak(card.en); $("#ag").onclick = () => speak(card.en); $("#nx").onclick = () => { view.pi++; view.revealed = false; render(); }; }
+  else $("#rv").onclick = () => { view.revealed = true; render(); };
+  $("#home").onclick = () => go("home");
+}
+
+function renderMouth() {
+  if (view.practice) { renderPractice(); return; }
+  const s = ensureTodaySet();
+  const M = s.mouth;
+  if (!M.queue) { M.queue = mouthQueue(s); M.i = 0; M.fast = 0; M.slow = 0; M.fail = 0; persist("session", s.date); }
+  if (activeStart == null) startActive();
+  if (M.i >= M.queue.length) {
+    M.done = true; persist("session", s.date); persist("progress"); stopActive();
+    const n = M.fast + M.slow + M.fail;
+    $("#app").innerHTML = `<section class="sheet stack"><span class="eyebrow">입 · 완료</span><h2>${n}문장 중 ${M.fast}문장이 바로 나왔습니다</h2>
+      <p class="muted small">못 나온 문장은 내일, 늦게 나온 문장은 곧 다시 나옵니다. 바로 나온 문장은 간격이 점점 벌어집니다 (1 → 2 → 4 → 7 → 14 → 30일).</p>
+      <div class="row"><button class="btn btn-primary" id="next">다음: 흐름</button><button class="btn btn-ghost" id="home">홈</button></div></section>`;
+    $("#next").onclick = () => go("flow"); $("#home").onclick = () => go("home"); return;
+  }
+  const card = cardById(M.queue[M.i]);
+  if (!card) { M.i++; persist("session", s.date); render(); return; }
+  const isNew = !progress.cards[card.id];
+  const prog = `<div class="progress"><div style="width:${M.i / M.queue.length * 100}%"></div></div>`;
+  if (!view.revealed) {
+    $("#app").innerHTML = `
+    <section class="sheet stack">
+      <div class="topbar"><span class="eyebrow">2 입 · 순간영작${isNew ? " · 새 문장" : " · 복습"}</span><span class="counter">${M.i + 1} / ${M.queue.length}</span></div>${prog}
+      <div class="prompt"><div class="prompt-ko">${esc(card.ko)}</div><div class="countdown" aria-hidden="true"><div></div></div></div>
+      <p class="small muted">노란 막대가 사라지기 전에 <b>소리 내어</b> 영어로 말하세요. 완벽하지 않아도 끝까지. 말한 뒤 정답을 봅니다.</p>
+      <div class="row"><button class="btn btn-primary" id="reveal">말했어요 · 정답 보기</button><button class="btn btn-ghost btn-sm" id="home">홈으로</button></div>
+    </section>`;
+    view.shownAt = Date.now();
+    $("#reveal").onclick = () => { view.revealed = true; view.took = Date.now() - view.shownAt; render(); };
+    $("#home").onclick = () => go("home");
+  } else {
+    $("#app").innerHTML = `
+    <section class="sheet stack">
+      <div class="topbar"><span class="eyebrow">2 입 · 순간영작</span><span class="counter">${M.i + 1} / ${M.queue.length}</span></div>${prog}
+      <div class="prompt"><div class="prompt-ko" style="font-size:1.05rem;font-weight:500;color:var(--ink-2)">${esc(card.ko)}</div><div class="prompt-en">${esc(card.en)}</div></div>
+      <div class="between"><button class="btn btn-ghost btn-sm" id="again">▶ 다시 듣기</button>${rateSeg()}</div>
+      <p class="small muted">정답을 한 번 소리 내어 따라 말한 뒤 채점하세요. ${(view.took / 1000).toFixed(1)}초 걸렸습니다.</p>
+      <div class="grade">
+        <button class="btn g-ok" data-g="fast">바로 나옴<small>5초 안에</small></button>
+        <button class="btn g-minor" data-g="slow">늦게·일부<small>막힘·작은 실수</small></button>
+        <button class="btn g-bad" data-g="fail">못 나옴<small>구조 틀림</small></button>
+      </div>
+    </section>`;
+    bindRate();
+    speak(card.en);
+    $("#again").onclick = () => speak(card.en);
+    document.querySelectorAll("[data-g]").forEach(b => b.onclick = () => {
+      const g = b.dataset.g; grade(card.id, g); M[g]++; M.i++;
+      view.revealed = false; persist("session", s.date);
+      if (M.i % 5 === 0) persist("progress");
+      render();
+    });
+  }
+}
+
+/* Flow: external audio-paced reading */
+function renderFlow() {
+  const s = session(today());
+  const F = s.flow;
+  if (activeStart == null) startActive();
+  $("#app").innerHTML = `
+  <section class="sheet stack">
+    <span class="eyebrow">3 흐름 · 음원에 맞춰 읽기</span>
+    <h2>되돌아갈 수 없는 속도로 앞에서부터</h2>
+    <p class="muted small">진단에서 긴 문장일수록 앞부분이 휘발됐습니다. 문장을 끝까지 담았다가 거꾸로 해석하는 습관 때문입니다. 음원 속도에 맞춰 읽으면 되돌아갈 수 없으니, 들어오는 순서대로 이해하는 회로가 생깁니다.</p>
+    <ol class="method">
+      <li><a class="link" href="https://www.bbc.co.uk/learningenglish/english/features/6-minute-english" target="_blank" rel="noopener">BBC Learning English · 6 Minute English</a>에서 에피소드 하나를 고릅니다 (지난 회차부터 차례로 해도 됩니다).</li>
+      <li><b>1회차</b>: 대본을 보면서 음원을 멈추지 않고 끝까지 듣습니다. 놓쳐도 되돌아가지 않습니다.</li>
+      <li><b>2회차</b>: 대본 없이 다시 듣습니다. 처음보다 들리는 부분이 늘어난 걸 확인합니다.</li>
+      <li>출퇴근·운동 중에 같은 에피소드를 한 번 더 들으면 주간 노출 시간이 늘어납니다 (공부 시간 추가 없이).</li>
+    </ol>
+    <div class="stack-sm">
+      <label class="small muted" for="ep">들은 에피소드 제목 (선택)</label>
+      <input type="text" id="ep" value="${esc(F.episode)}" placeholder="예: Is it OK to be lazy?">
+    </div>
+    <div class="stack-sm">
+      <label class="small muted" for="xm">오늘 공부 시간 밖에서 영어를 들은 시간 (분)</label>
+      <input type="number" id="xm" min="0" max="600" inputmode="numeric" value="${F.extraMin || 0}">
+    </div>
+    <label class="check" for="ck"><input type="checkbox" id="ck" ${F.done ? "checked" : ""}><span>대본 보며 1번, 대본 없이 1번 들었다</span></label>
+    <div class="row"><button class="btn btn-primary" id="save">기록하고 홈으로</button></div>
+  </section>`;
+  $("#save").onclick = () => {
+    F.episode = $("#ep").value.trim(); F.extraMin = Math.max(0, Math.min(600, Number($("#xm").value) || 0)); F.done = $("#ck").checked;
+    persist("session", s.date); go("home");
+  };
+}
+
+/* Weekly writing with Claude feedback */
+let writeTimer = null, writeCtl = null;
+function renderWrite() {
+  const topic = WRITE_TOPICS[Math.floor((Date.now() / 6048e5)) % WRITE_TOPICS.length];
+  const draft = lsGet("e2m-draft", "");
+  const last = writings[0];
+  $("#app").innerHTML = `
+  <section class="sheet stack">
+    <div class="topbar"><span class="eyebrow">주간 작문</span><button class="btn btn-ghost btn-sm" id="home">홈으로</button></div>
+    <h2>5분 동안 멈추지 말고 쓰기</h2>
+    <p class="muted small">이번 주 주제: <b>${esc(topic)}</b>. 사전·번역기 없이. 진단에서 자유 작문의 과거시제는 대체로 맞았습니다. 오늘은 관사(a, the)와 had를 의식하며 써 보세요.</p>
+    <div class="between"><span class="counter" id="wc">0단어</span><div class="row"><span class="counter" id="tm">5:00</span><button class="btn btn-ghost btn-sm" id="timer">타이머 시작</button></div></div>
+    <textarea id="wt" class="en" style="min-height:220px;font-size:1.05rem" spellcheck="false" autocapitalize="sentences" placeholder="This week, I…">${esc(draft)}</textarea>
+    <div class="row">
+      <button class="btn btn-primary" id="fbk" ${sample ? "" : "hidden"}>Claude에게 교정받기</button>
+      <button class="btn ${sample ? "btn-ghost" : "btn-primary"}" id="copy">글 복사</button>
+      <button class="btn btn-ghost" id="stop" hidden>멈추기</button>
+    </div>
+    <p class="small muted" id="msg">${sample ? "교정은 당신의 Claude 사용량을 씁니다. 처음 한 번은 허락을 묻습니다." : "이 화면에서는 바로 교정을 받을 수 없습니다. ‘글 복사’ 후 Claude와의 대화에 붙여 넣어 주세요."}</p>
+    <div id="fb"></div>
+    ${writings.length ? `<div class="stack-sm"><h3>지난 작문</h3>${writings.slice(0, 6).map(w => `<details><summary>${esc(w.date)} · ${w.words}단어</summary><div class="fb" style="padding-top:10px">${w.feedback ? `<div class="corrected">${esc(w.feedback.corrected)}</div>` : `<div class="corrected">${esc(w.text)}</div>`}</div></details>`).join("")}</div>` : ""}
+  </section>`;
+  const ta = $("#wt");
+  const wc = () => { const n = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0; $("#wc").textContent = n + "단어"; return n; };
+  wc();
+  let saveT; ta.addEventListener("input", () => { wc(); clearTimeout(saveT); saveT = setTimeout(() => lsSet("e2m-draft", ta.value), 500); });
+  $("#home").onclick = () => { clearInterval(writeTimer); go("home"); };
+  $("#timer").onclick = () => {
+    clearInterval(writeTimer); const end = Date.now() + 300000; ta.focus();
+    writeTimer = setInterval(() => { const left = Math.max(0, Math.round((end - Date.now()) / 1000)); const el = $("#tm"); if (!el) { clearInterval(writeTimer); return; } el.textContent = `${Math.floor(left / 60)}:${pad(left % 60)}`; if (!left) { clearInterval(writeTimer); el.textContent = "끝"; } }, 250);
+  };
+  $("#copy").onclick = () => {
+    const text = `[주간 작문 ${today()}] 주제: ${topic}\n${ta.value}`;
+    const fallback = () => { ta.focus(); ta.select(); $("#msg").textContent = "글이 선택되었습니다. 길게 눌러 복사하세요."; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { $("#copy").textContent = "복사됨"; }).catch(fallback); else fallback();
+  };
+  const fbBtn = $("#fbk");
+  if (fbBtn) fbBtn.onclick = async () => {
+    const text = ta.value.trim(); const words = wc();
+    if (words < 15) { $("#msg").textContent = "15단어 이상 써야 교정할 거리가 생깁니다."; return; }
+    fbBtn.disabled = true; $("#stop").hidden = false; $("#msg").textContent = "Claude가 읽는 중…";
+    writeCtl = new AbortController();
+    $("#stop").onclick = () => writeCtl && writeCtl.abort();
+    const prompt = `You are an English writing coach for a Korean adult learner (intermediate; recognizes about 7,000 words but produces simple sentences). Their diagnosed recurring errors: using "had" as a general past-tense marker (e.g. "I had meet", "I had jogging"), dropping or misusing articles, present tense for past events, and wrong prepositions ("on 5 years").
+Correct the learner's text below. Keep their meaning, voice and level; make it natural, not fancy.
+Reply with only JSON in this shape:
+{"corrected": "the full corrected text",
+ "errors": [{"wrong": "learner's exact phrase", "right": "corrected phrase", "why": "one short Korean sentence"}],
+ "drills": [{"ko": "natural Korean sentence", "en": "one sentence from the corrected text, 4-12 words"}],
+ "comment": "two short Korean sentences: one strength, one focus for next week"}
+Rules: at most 6 errors, most important first, prefer recurring patterns over one-off typos. Exactly 3 drills, chosen from sentences the learner got wrong.
+Learner's text:
+"""${text.slice(0, 4000)}"""`;
+    try {
+      const fb = await sample.json(prompt, { signal: writeCtl.signal });
+      if (!fb || typeof fb.corrected !== "string") throw { code: "invalid_json" };
+      fb.errors = Array.isArray(fb.errors) ? fb.errors.slice(0, 6) : [];
+      fb.drills = Array.isArray(fb.drills) ? fb.drills.filter(x => x && x.ko && x.en).slice(0, 3) : [];
+      const w = { id: "w-" + Date.now().toString(36), date: today(), topic, text, words, feedback: fb, createdAt: Date.now() };
+      writings.unshift(w); lsSet(LS_W, writings); lsSet("e2m-draft", "");
+      if (db) db.doc("writings/" + w.id).set(JSON.parse(JSON.stringify(w))).catch(() => {});
+      $("#msg").textContent = "";
+      showFeedback(w);
+    } catch (e) {
+      const code = e && e.code;
+      $("#msg").textContent = code === "cancelled" ? "멈췄습니다." : code === "not_granted" || code === "sampling_disabled" ? "교정 기능을 쓸 수 없습니다. ‘글 복사’로 Claude와의 대화에 붙여 넣어 주세요." : code === "rate_limited" ? "요청이 많습니다. 잠시 뒤에 다시 눌러 주세요." : "교정을 받지 못했습니다. 다시 눌러 보거나 ‘글 복사’를 쓰세요.";
+      if (code === "not_granted" || code === "sampling_disabled") fbBtn.hidden = true;
+    } finally { fbBtn.disabled = false; $("#stop").hidden = true; }
+  };
+}
+function showFeedback(w) {
+  const fb = w.feedback;
+  $("#fb").innerHTML = `<div class="fb">
+    <h3>교정된 글</h3><div class="corrected">${esc(fb.corrected)}</div>
+    ${fb.errors.length ? `<div><h3 style="margin-bottom:4px">고칠 점</h3>${fb.errors.map(x => `<div class="err"><span class="w">${esc(x.wrong)}</span><span class="r">${esc(x.right)}</span><span class="y">${esc(x.why)}</span></div>`).join("")}</div>` : ""}
+    ${fb.comment ? `<div class="point">${esc(fb.comment)}</div>` : ""}
+    ${fb.drills.length ? `<div class="stack-sm"><h3>내 문장으로 만든 순간영작 카드</h3>${fb.drills.map(d => `<div class="small"><b>${esc(d.ko)}</b><br><span class="en">${esc(d.en)}</span></div>`).join("")}
+      <button class="btn btn-primary" id="addc">이 ${fb.drills.length}문장을 카드에 추가</button></div>` : ""}
+  </div>`;
+  const add = $("#addc");
+  if (add) add.onclick = () => {
+    progress.custom = progress.custom || [];
+    fb.drills.forEach((d, k) => progress.custom.push({ id: `${w.id}-${k + 1}`, set: 0, ko: String(d.ko), en: String(d.en) }));
+    persist("progress"); add.disabled = true; add.textContent = "추가됨 · 다음 순간영작부터 나옵니다";
+  };
+}
+
+/* ───────────── Boot ───────────── */
+
+function start() { render(); setFoot(); initStore(); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopActive(); else if (["ear", "mouth", "flow"].includes(view.name)) startActive(); });
+if (window.claude && window.claude.hot && typeof window.claude.hot.snapshot === "function") window.claude.hot.snapshot(() => ({ view }));
+if (window.claude && window.claude.hot && typeof window.claude.hot.ready === "function") window.claude.hot.ready(d => { if (d && d.view) view = d.view; start(); });
+else start();
+})();
+</script>
